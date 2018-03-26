@@ -58,8 +58,8 @@
 
 ### 架构与原理
 
-> Hyperledger Fabric 1.0 架构及原理<https://blog.csdn.net/xcjing/article/details/78883642>
-> Hyperledger Fabric 1.0 架构与流程<https://www.cnblogs.com/bjlhx/p/7119442.html>
+> [Hyperledger Fabric 1.0 架构及原理](https://blog.csdn.net/xcjing/article/details/78883642)
+> [Hyperledger Fabric 1.0 架构与流程](https://www.cnblogs.com/bjlhx/p/7119442.html)
 
 ------
 
@@ -766,7 +766,7 @@ peer chaincode query -C mych -n mycc -c '{"Args":["query", "a"]}'   #再在第�
 
 ### 说明
 
-* 全部配置完成的YAML配置文件下载地址:[链接: <https://pan.baidu.com/s/1EdTIROP0VbQ_L1u0KIjE4A> 密码: s2v7].
+* 全部配置完成的YAML配置文件下载地址:<链接: [百度网盘](https://pan.baidu.com/s/1EdTIROP0VbQ_L1u0KIjE4A) 密码: s2v7>.
 * 对于通道,链码和交易的相关操作会永久生效,节点重启后只需要启动服务即可(peer node start).
 * 配置完成后, 请使用unset清除各peer节点的CORE_PEER_LOCALMSPID和CORE_PEER_MSPCONFIGPATH环境变量.
 * 重启所有节点, 测试Fabric是否依然能够正常工作.
