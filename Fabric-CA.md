@@ -38,7 +38,7 @@
 
 ## 概述
 
-Fabric-CA是Fabric v1.0版以后代替v0.6版中的Membership Service的用于生成和管理节点证书和密钥的CA(证书颁发机构)服务, 其主要功能包括身份注册, 身份登记, 身份更改, 身份撤销, 以及证书签发,续期与撤销, Fabric-CA包括Server端和Client端, Server端负责提供身份证书密钥等服务, Server端可以由多个CA服务器组成CA集群, 通过HAProxy负载均衡对外提供服务. Client端负责与Server端进行交互, 发起服务请求, 另一种与Server端进行交互的方式是Fabric SDK.
+Fabric-CA是Fabric v1.0版以后代替v0.6版中的Membership Service的用于生成和管理节点证书和密钥的CA(证书颁发机构)服务, 其主要功能包括身份注册, 身份登记, 身份更改, 身份撤销, 以及证书签发,续期与撤销, Fabric-CA包括Server端和Client端, Server端负责提供身份证书密钥等服务, Server端可以由多个CA服务器组成CA集群, 通过HA Proxy负载均衡对外提供服务. Client端负责与Server端进行交互, 发起服务请求, 另一种与Server端进行交互的方式是Fabric SDK.
 
 Fabric-CA的架构和在Fabric网络中所处角色如下图所示:
 ![Fabric-CA架构图](./images/fabric-ca.png)
@@ -567,7 +567,7 @@ tls:
 
 中间CA是根CA的代理, 其证书由根CA或其他中间CA签发, 中间CA也能代表根CA为其他CA或末端用户节点签发证书. 中间CA向根CA申请CA证书时, 不仅会获得自己的CA证书, 私钥, 还会获得一个证书链(pem文件), 从根CA到当前节点(不限于CA节点)的数状分杈上的所有证书都可以被追加到证书链上, 因此只需要利用证书链即可回溯验证链上每一个证书的合法性. 即如果根CA证书是受信的, 那么此根CA的证书链上的所有证书都是受信的.
 
-Fabric的CA集群使用HAProxy实现负载均衡, 但通常根CA服务器并不参与负载均衡, 事实上, 根CA服务器甚至可以直接下线, 只需要保留根CA的证书和密钥即可, 只有在撤销或更改中间CA的证书的时候才需要根CA的证书和密钥.
+Fabric的CA集群使用HA Proxy实现负载均衡, 但通常根CA服务器并不参与负载均衡, 事实上, 根CA服务器甚至可以直接下线, 只需要保留根CA的证书和密钥即可, 只有在撤销或更改中间CA的证书的时候才需要根CA的证书和密钥.
 
 #### 创建中间CA服务器
 
@@ -591,7 +591,7 @@ fabric-ca-server start -b admin:adminpw -u http://admin:adminpw@10.0.2.11:7054  
 
 ### 说明
 
-* 关于CA服务器集群下的CA数据库和HAProxy负载均衡以及将Fabric-CA集成到Fabric网络的内容, 待续...
+* 关于CA服务器集群下的CA数据库和HA Proxy负载均衡以及将Fabric-CA集成到Fabric网络的内容, 待续...
 
 ------
 
