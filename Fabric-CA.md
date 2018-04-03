@@ -151,10 +151,10 @@ fabric-ca-server init -b admin:adminpw
 > 一般使用配置文件进行参数配置, 配置文件的配置可以被环境变量和命令行参数覆盖, CLI或环境变量未设置的参数则使用配置文件中的值
 
 ```yaml
-version:                                                        #配置文件版本
-port: 7054                                                      #ca-server监听端口
-debug: false                                                    #是否开启debug日志
-crlsizelimit: 512000                                            #证书吊销列表的大小限制(bytes)
+version:                                                      #配置文件版本
+port: 7054                                                    #ca-server监听端口
+debug: false                                                  #是否开启debug日志
+crlsizelimit: 512000                                          #证书吊销列表的大小限制(bytes)
 tls:                                                          #ca-server监听端口的tls加密传输配置(即server和client数据传输是否加密), 此时节点是作为serer的
   enabled: false                                              #默认不启用server和client的传输加密
   certfile:                                                   #ca-server的证书
@@ -218,7 +218,7 @@ ldap:                                                     #ldap配置, 启用后
          groups:
             - name:
               value:
-affiliations:                                             #组织关系, 描述现实中组织的组成结构, 非叶节点都是大小写不敏感的, 默认都是小写
+affiliations:                                            #组织关系, 描述现实中组织的组成结构, 非叶节点都是大小写不敏感的, 默认都是小写
    org1:
       - department1
       - department2
@@ -245,10 +245,10 @@ signing:                                                #签名部分
             - server auth
             - client auth
             - key agreement
-         expiry: 8760h                                 #默认过期时间1年
-csr:                                                   #证书请求文件, 即CA证书的配置, 会由fabric-ca-server命令根据此配置自动生成此ca-server的CA证书, 如果不需要自动生成, 可以在上面ca配置部分指定certfile和keyfile的路径, 并在相应路径下存放自己提供的证书和密钥
+         expiry: 8760h                                  #默认过期时间1年
+csr:                                                    #证书请求文件, 即CA证书的配置, 会由fabric-ca-server命令根据此配置自动生成此ca-server的CA证书, 如果不需要自动生成, 可以在上面ca配置部分指定certfile和keyfile的路径, 并在相应路径下存放自己提供的证书和密钥
    cn: fabric-ca-server
-   key:                                                #加密算法
+   key:                                                 #加密算法
       algo: ecdsa
       size: 256
    names:
@@ -329,8 +329,8 @@ fabric-ca-client enroll -u http://admin:adminpw@10.0.2.11:7054            #10.0.
 默认的fabric-ca-client-config.yaml配置文件内容如下(修改内容后可以通过fabric-ca-client reenroll命令重新根据此配置文件的内容进行登记)：
 
 ```yaml
-url: http://10.0.2.11:7054                                #ca-server的服务IP和端口
-mspdir: msp                                              #节点登记身份后生成的相关认证相关文件存放的目录(相对路径)
+url: http://10.0.2.11:7054                              #ca-server的服务IP和端口
+mspdir: msp                                             #节点登记身份后生成的相关认证相关文件存放的目录(相对路径)
 tls:                                                    #tls数据加密传输配置, 此时本节点是作为client的
   certfiles:                                            #用于验证自身证书的一系列受信的CA证书文件
   client:
@@ -345,7 +345,7 @@ csr:                                                         #证书请求文件
       L:
       O: Hyperledger
       OU: Fabric
-  hosts:                                                    #证书在哪些主机名的主机上可用
+  hosts:                                                     #证书在哪些主机名的主机上可用
     - ca
 id:                                                          #向ca-server注册身份的配置
   name:                                                      #身份的唯一识别名(ID)
@@ -359,13 +359,13 @@ enrollment:                                                  #登记的身份
   profile:                                                   #签名配置文件
   label:                                                     #分层存储管理(即fabric中的区块链加密管理套件bccsp)
 caname:                                                      #连接ca-server上的哪个CA
-bccsp:                                                      #节点使用的加密管理套件
-    default: SW                                             #基于软件的加密实现
+bccsp:                                                       #节点使用的加密管理套件
+    default: SW                                              #基于软件的加密实现
     sw:
-        hash: SHA2                                          #加密算法
+        hash: SHA2                                           #加密算法
         security: 256
         filekeystore:
-            keystore: msp/keystore                          #密钥存储位置
+            keystore: msp/keystore                           #密钥存储位置
 
 ```
 
