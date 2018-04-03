@@ -4,6 +4,7 @@
 
 ## 目录
 
+- [概述](#概述)
 - [环境](#环境)
   - [系统设置](#系统设置)
   - [依赖包](#依赖包)
@@ -32,6 +33,15 @@
     - [创建中间CA服务器](#创建中间ca服务器)
   - [说明](#说明)
 - [结语](#结语)
+
+------
+
+## 概述
+
+Fabric-CA是Fabric v1.0版以后代替v0.6版中的Membership Service的用于生成和管理节点证书和密钥的CA(证书颁发机构)服务, 其主要功能包括身份注册, 身份登记, 身份更改, 身份撤销, 以及证书签发,续期与撤销, Fabric-CA包括Server端和Client端, Server端负责提供身份证书密钥等服务, Server端可以由多个CA服务器组成CA集群, 通过HAProxy负载均衡对外提供服务. Client端负责与Server端进行交互, 发起服务请求, 另一种与Server端进行交互的方式是Fabric SDK.
+
+Fabric-CA的架构和在Fabric网络中所处角色如下图所示:
+![Fabric-CA架构图](./images/fabric-ca.png)
 
 ------
 
