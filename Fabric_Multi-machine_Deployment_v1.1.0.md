@@ -105,7 +105,7 @@ vim /etc/hosts
 用于编译相关源码.
 
 ```bash
-yum install snappy-devel zlib-devel bzip2-devel libtool-ltdl-devel -y
+yum install snappy-devel zlib-devel bzip2-devel libtool libtool-ltdl-devel -y
 ```
 
 #### Git
