@@ -727,7 +727,7 @@ export CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/crypto-config/peerOrganiz
 ```bash
 cp -r /root/git/fabric/examples /root/go/src/
 cd /root/go/src/
-peer chaincode package -n mycc -p /root/go/src/examples/chaincode/go/chaincode_example02 -v 1.0 mycc.pak
+peer chaincode package -n mycc -p examples/chaincode/go/chaincode_example02 -v 1.0 mycc.pak     #-p应指定$GOPATH/src后的相对路径
 cp mycc.pak /etc/hyperledger/fabric/                    #使用管理员身份打包链码
 cd /etc/hyperledger/fabric/
 scp mycc.pak  root@10.0.2.7:/etc/hyperledger/fabric/    #将打包好的链码分发到其他peer节点
