@@ -750,7 +750,7 @@ peer chaincode list  -C mych --installed      #查看安装的链码
 >此操作只需要在任意一个peer节点执行, 其他节点会自动同步该实例化的链码信息并创建链码容器, 实例化链码时可以指定背书策略(相当于权限控制)
 
 ```bash
-peer chaincode instantiate -o orderer.example.com:7050 -C mych -n mycc -v 1.0 -c '{"Args":["init", "a", "100", "b", "200"]}' -P "OR('Org1MSP.member', 'Org2MSP.member')" --tls true --cafile /etc/hyperledger/fabric/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem     #使用管理员身份实例化链码, 如果orderer节点的tls未启用, 则需要去掉--tls true参数
+peer chaincode instantiate -o orderer.example.com:7050 -C mych -n mycc -v 1.0 -c '{"Args":["init", "a", "100", "b", "200"]}' -P "OR('Org1MSP.member', 'Org2MSP.member')" --tls true --cafile /etc/hyperledger/fabric/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem     #使用管理员身份实例化链码, 如果orderer节点的tls未启用, 则需要去掉--tls 和 --cafile参数
 docker ps                #可以看到链码容器已启动(但只有发起链码实例化的节点的容器会启动,因为链码容器只有在节点发起交易的时候才启动)
 peer chaincode list -C mych --instantiated    #可以在各节点上查看已经实例化的链码(确认链码在节点上是否实例化)
 ```
