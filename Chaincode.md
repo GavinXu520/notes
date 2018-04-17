@@ -1002,7 +1002,7 @@ peer chaincode instantiate -o orderer.example.com:7050 -C mychannel -n mycc -v 1
 > -c 选项(必选)表示实例化时的初始化参数
 > -P 选项(必选)表示背书策略
 > -o 选项(可选)表示共识/排序节点
->  chaincode安装和实例化时, 可以使用--tls和--cafile选项指定使用加密方式进行数据传输
+> chaincode安装和实例化时, 可以使用--tls和--cafile选项指定使用加密方式进行数据传输
 
 ### 升级(upgrade)
 
@@ -1054,14 +1054,15 @@ Fabric v1.1.0还不支持chaincode的启动与停止指令, 可以通过移除ch
 
 ```bash
 #!/bin/bash
-#Description:   shell下格式化输出为表格样式
-#               使用时首先需要调用set_title对表格初始化
-#               追加表格数据可使用append_cell和append_line，append_cell不会自动换行，换行必须要使用append_line
-#               append_line参数是可选的，并且会自动对之前的append_cell换行
-#               使用output_table可输出表格
-
+# Usage:
+# dls             => 默认显示
+# dls -i          => 完整显示(无表格格式)
+# dls -s          => 精简显示
+# dls -n cli      => 仅显示容器名中带cli关键字的容器
 
 sep="#"
+IFS=$'\n'
+
 function append_cell(){
     #对表格追加单元格
     #append_cell col0 "col 1" ""
@@ -1124,7 +1125,7 @@ function set_title(){
     content=""
 }
 function output_table(){
-    if [ ! -n "${title}" ]
+    if [ ! -n "${title}" ] 
     then
         echo "未设置表头，退出" && return 1
     fi
@@ -1134,18 +1135,50 @@ function output_table(){
 
 }
 
+simple_mode="false"
+full_mode="false"
+container_name="all"
+while getopts :n:si opt; do
+    case $opt in
+        n) container_name=$OPTARG
+        ;;
+        s) simple_mode="true"
+        ;;
+        i) full_mode="true"
+        ;;
+        *) echo "Usage: dls [-s] [-i] [-n] [container]"
+    esac
+done
 
-IFS=$'\n'
-containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}' $(docker ps -aq))
+if [[ $full_mode == "true" ]]
+then
+    echo "# Container: ""$container_name"
+    if [[ $container_name == "all" ]]
+    then
+        docker inspect $(docker ps -aq)
+        exit 0
+    else
+        docker inspect $(docker ps -aqf name=$container_name)
+        exit 0
+    fi
+fi
 
-set_title "容器名" "主机名" "镜像" "命令" "网络模式" "网络地址" "端口映射"
+containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}-✡{{.State.Status}}' $(docker ps -aq))
+
+if [[ $simple_mode == "true" ]]
+then
+    set_title "容器名称" "主机名称" "启动命令" "网络地址" "端口映射" "运行状态"
+else
+    set_title "容器名称" "主机名称" "基础镜像" "启动命令" "网络子域" "网络地址" "端口映射" "运行状态"
+fi
+
 for container in  $containers
 do
-    if [[ $# == 0 ]]
+    if [[ $container_name = "all" ]]
     then
         item=$(echo $container) 
     else
-        item=$(echo $container | grep $1)
+        item=$(echo $container | grep $container_name)
     fi
 
     if [[ $item != "" ]]
@@ -1168,8 +1201,18 @@ do
         ports=${ports//"}"/""}
         ports=${ports//": "/":"}
         ports=${ports//" "/"|"}
+        if [[ $ports != "-" ]]
+        then
+            ports=${ports//"-"/""}
+        fi
+        rstat=$(echo $item | cut -d '✡' -f8)
 
-        append_line $cname $hname $image $cmmnd $nmode $ipadr $ports
+        if [[ $simple_mode == "true" ]]
+        then
+             append_line $cname $hname $cmmnd $ipadr $ports $rstat
+        else
+             append_line $cname $hname $image $cmmnd $nmode $ipadr $ports $rstat
+        fi
     fi
 done
 output_table
