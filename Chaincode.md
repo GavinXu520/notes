@@ -1058,7 +1058,8 @@ Fabric v1.1.0还不支持chaincode的启动与停止指令, 可以通过移除ch
 # dls             => 默认显示
 # dls -i          => 完整显示(无表格格式)
 # dls -s          => 精简显示
-# dls -n cli      => 仅显示容器名中带cli关键字的容器
+# dls -k          => 删除容器
+# dls -n cli      => 仅对容器名包含指定关键字的容器执行操作
 
 sep="#"
 IFS=$'\n'
@@ -1135,10 +1136,11 @@ function output_table(){
 
 }
 
+stop_container="false"
 simple_mode="false"
 full_mode="false"
 container_name="all"
-while getopts :n:si opt; do
+while getopts :n:sik opt; do
     case $opt in
         n)
             container_name=$OPTARG
@@ -1149,11 +1151,26 @@ while getopts :n:si opt; do
         i)
             full_mode="true"
             ;;
+        k)
+            stop_container="true"
+            ;;
         *)
-            echo "Usage: dls [-s] [-i] [-n container]"
+            echo "Usage: dls [-s] [-i] [-k] [-n container]"
             exit 1
     esac
 done
+
+if [[ $stop_container == "true" ]]
+then
+    if [[ $container_name == "all" ]]
+    then
+        docker rm -f $(docker ps -aq)
+        exit 0
+    else
+        docker rm -f $(docker ps -aqf name=$container_name)
+        exit 0
+    fi
+fi
 
 if [[ $full_mode == "true" ]]
 then
