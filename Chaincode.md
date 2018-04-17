@@ -1059,19 +1059,6 @@ Fabric v1.1.0还不支持chaincode的启动与停止指令, 可以通过移除ch
 #               追加表格数据可使用append_cell和append_line，append_cell不会自动换行，换行必须要使用append_line
 #               append_line参数是可选的，并且会自动对之前的append_cell换行
 #               使用output_table可输出表格
-#               暂不支持修改/插入/删除数据
-#               可使用. format_table.sh 或者source format_table.sh来引入改脚本的函数
-#               "(*)"会自动着色为红色字体
-# +----+------+---------------+
-# |ID  |Name  |Creation time  |
-# +----+------+---------------+
-# |1   |TF    |2017-01-01     |
-# |2   |      |2017-01-02(*)  |
-# |3   |SF    |               |
-# |3   |SF    |(*)            |
-# |4   |TS    |               |
-# |5   |      |               |
-# +----+------+---------------+
 
 
 sep="#"
