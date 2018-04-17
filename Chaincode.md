@@ -34,6 +34,7 @@
         - [启停](#启停)
     - [其他](#其他)
         - [系统chaincode](#系统chaincode)
+        - [docker脚本](#docker脚本)
 
 <!-- /TOC -->
 
@@ -442,6 +443,7 @@ chaincode的开发模板: 首先声明一个自定义类(结构体)并实现Init
 ### chaincode stub interface
 
 chaincode stub interface(存根接口)定义了一系列与交易处理相关的函数, 包含交易参数的解析, 状态数据库和区块链账本的读写, chaincode的调用, 交易及其发起者信息的获取, 事件设置等.
+
 > - func (stub *ChaincodeStub) GetArgs() [][]byte : 获取交易参数列表(二维字节数组形式)
 > - func (stub *ChaincodeStub) GetArgs() []string: 获取交易参数列表(字符串形式)
 > - func (stub *ChaincodeStub) GetArgsSlice() ([]byte, error) : 获取交易参数列表(字节数组切片形式)
@@ -474,473 +476,473 @@ chaincode stub interface(存根接口)定义了一系列与交易处理相关的
 package main
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"reflect"
-	"strconv"
-	"strings"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "reflect"
+    "strconv"
+    "strings"
 
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/protos/peer"
+    "github.com/hyperledger/fabric/core/chaincode/shim"
+    "github.com/hyperledger/fabric/protos/peer"
 )
 
 type MC struct {
 }
 
 type KV struct {
-	Key   string
-	Value []byte
+    Key   string
+    Value []byte
 }
 type Customer struct {
-	Id      int
-	Name    string
-	Deposit float64
+    Id      int
+    Name    string
+    Deposit float64
 }
 
 func (t *MC) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	return shim.Success([]byte("OK"))
+    return shim.Success([]byte("OK"))
 }
 
 func (t *MC) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
-	function, args := stub.GetFunctionAndParameters()
-	return t.Parse(stub, function, args)
+    function, args := stub.GetFunctionAndParameters()
+    return t.Parse(stub, function, args)
 }
 
 func (t *KV) Display() string {
-	return t.Key + ":" + string(t.Value)
+    return t.Key + ":" + string(t.Value)
 }
 
 //根据给定参数获取kv结果集
 func (t *MC) FetchKVs(stub shim.ChaincodeStubInterface, stype, skey, svalue string) ([]KV, error) {
-	var kvs []KV
-	if skey == "Id" {
-		var key string
-		if stype != "" {
-			key = stype + ":" + svalue
-		} else {
-			key = svalue
-		}
-		item, err := stub.GetState(key)
-		if err != nil {
-			return kvs, errors.New("None")
-		}
-		kvs = append(kvs, KV{key, item})
-	} else {
-		if stype == "" && skey != "" {
-			return kvs, errors.New("None")
-		} else {
-			startKey := "0"
-			endKey := "ZZZZZZZZZZZZZZZ"
-			if stype != "" {
-				startKey = stype + ":" + startKey
-				endKey = stype + ":" + endKey
-			}
+    var kvs []KV
+    if skey == "Id" {
+        var key string
+        if stype != "" {
+            key = stype + ":" + svalue
+        } else {
+            key = svalue
+        }
+        item, err := stub.GetState(key)
+        if err != nil {
+            return kvs, errors.New("None")
+        }
+        kvs = append(kvs, KV{key, item})
+    } else {
+        if stype == "" && skey != "" {
+            return kvs, errors.New("None")
+        } else {
+            startKey := "0"
+            endKey := "ZZZZZZZZZZZZZZZ"
+            if stype != "" {
+                startKey = stype + ":" + startKey
+                endKey = stype + ":" + endKey
+            }
 
-			keysIter, err := stub.GetStateByRange(startKey, endKey)
-			if err != nil {
-				return kvs, err
-			}
-			defer keysIter.Close()
+            keysIter, err := stub.GetStateByRange(startKey, endKey)
+            if err != nil {
+                return kvs, err
+            }
+            defer keysIter.Close()
 
-			for keysIter.HasNext() {
-				resp, iterErr := keysIter.Next()
-				if iterErr != nil {
-					return kvs, iterErr
-				}
-				if stype != "" && skey != "" {
-					switch stype {
-					case "Customer":
-						var customer Customer
-						err = json.Unmarshal(resp.Value, &customer)
-						if err != nil {
-							return kvs, err
-						}
+            for keysIter.HasNext() {
+                resp, iterErr := keysIter.Next()
+                if iterErr != nil {
+                    return kvs, iterErr
+                }
+                if stype != "" && skey != "" {
+                    switch stype {
+                    case "Customer":
+                        var customer Customer
+                        err = json.Unmarshal(resp.Value, &customer)
+                        if err != nil {
+                            return kvs, err
+                        }
 
-						item := reflect.ValueOf(&customer).Elem()
-						for i := 0; i < item.NumField(); i++ {
-							if item.Type().Field(i).Name == skey {
-								itype := item.Field(i).Type().Name()
-								var tvalue string
-								switch itype {
-								case "int":
-									tvalue = strconv.Itoa(int(item.Field(i).Int()))
-								case "string":
-									tvalue = item.Field(i).String()
-								case "float64":
-									tvalue = strconv.FormatFloat(item.Field(i).Float(), 'f', -1, 64)
-								}
-								if svalue == tvalue {
-									kvs = append(kvs, KV{resp.Key, resp.Value})
-								}
-								break
-							}
-						}
-					default:
-						break
-					}
-				} else {
-					kvs = append(kvs, KV{resp.Key, resp.Value})
-				}
-			}
-		}
-	}
-	return kvs, nil
+                        item := reflect.ValueOf(&customer).Elem()
+                        for i := 0; i < item.NumField(); i++ {
+                            if item.Type().Field(i).Name == skey {
+                                itype := item.Field(i).Type().Name()
+                                var tvalue string
+                                switch itype {
+                                case "int":
+                                    tvalue = strconv.Itoa(int(item.Field(i).Int()))
+                                case "string":
+                                    tvalue = item.Field(i).String()
+                                case "float64":
+                                    tvalue = strconv.FormatFloat(item.Field(i).Float(), 'f', -1, 64)
+                                }
+                                if svalue == tvalue {
+                                    kvs = append(kvs, KV{resp.Key, resp.Value})
+                                }
+                                break
+                            }
+                        }
+                    default:
+                        break
+                    }
+                } else {
+                    kvs = append(kvs, KV{resp.Key, resp.Value})
+                }
+            }
+        }
+    }
+    return kvs, nil
 }
 
 //根据请求参数中指定的函数将请求交由对应的函数处理
 func (t *MC) Parse(stub shim.ChaincodeStubInterface, function string, args []string) peer.Response {
-	switch function {
-	case "Query":
-		return t.QueryAgent(stub, args)
-	case "Add":
-		return t.AddAgent(stub, args)
-	case "Update":
-		return t.UpdateAgent(stub, args)
-	case "Delete":
-		return t.DeleteAgent(stub, args)
-	case "Transact":
-		return t.TransactAgent(stub, args)
-	case "Traverse":
-		return t.Traverse(stub, args)
-	case "HistQuery":
-		return t.HistQuery(stub, args)
-	case "Test":
-		return t.Test(stub, args)
-	default:
-		return shim.Error("Parse error")
-	}
+    switch function {
+    case "Query":
+        return t.QueryAgent(stub, args)
+    case "Add":
+        return t.AddAgent(stub, args)
+    case "Update":
+        return t.UpdateAgent(stub, args)
+    case "Delete":
+        return t.DeleteAgent(stub, args)
+    case "Transact":
+        return t.TransactAgent(stub, args)
+    case "Traverse":
+        return t.Traverse(stub, args)
+    case "HistQuery":
+        return t.HistQuery(stub, args)
+    case "Test":
+        return t.Test(stub, args)
+    default:
+        return shim.Error("Parse error")
+    }
 }
 
 func (t *MC) QueryAgent(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	if args == nil || len(args) != 3 {
-		return shim.Error("QueryAgent error")
-	}
-	switch args[0] {
-	case "Customer":
-		return t.QueryCustomer(stub, args[1], args[2])
-	default:
-		return shim.Error("QueryAgent error")
-	}
+    if args == nil || len(args) != 3 {
+        return shim.Error("QueryAgent error")
+    }
+    switch args[0] {
+    case "Customer":
+        return t.QueryCustomer(stub, args[1], args[2])
+    default:
+        return shim.Error("QueryAgent error")
+    }
 }
 
 func (t *MC) AddAgent(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	if args == nil || len(args) != 4 {
-		return shim.Error("AddAgent error")
-	}
-	switch args[0] {
-	case "Customer":
-		return t.AddCustomer(stub, args[1], args[2], args[3])
-	default:
-		return shim.Error("AddAgent error")
-	}
+    if args == nil || len(args) != 4 {
+        return shim.Error("AddAgent error")
+    }
+    switch args[0] {
+    case "Customer":
+        return t.AddCustomer(stub, args[1], args[2], args[3])
+    default:
+        return shim.Error("AddAgent error")
+    }
 }
 
 func (t *MC) UpdateAgent(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	if args == nil || len(args) != 5 {
-		return shim.Error("UpdateAgent error")
-	}
-	switch args[0] {
-	case "Customer":
-		return t.UpdateCustomer(stub, args[1], args[2], args[3], args[4])
-	default:
-		return shim.Error("UpdateAgent error")
-	}
+    if args == nil || len(args) != 5 {
+        return shim.Error("UpdateAgent error")
+    }
+    switch args[0] {
+    case "Customer":
+        return t.UpdateCustomer(stub, args[1], args[2], args[3], args[4])
+    default:
+        return shim.Error("UpdateAgent error")
+    }
 }
 
 func (t *MC) DeleteAgent(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	if args == nil || len(args) != 3 {
-		return shim.Error("DeleteAgent error")
-	}
-	switch args[0] {
-	case "Customer":
-		return t.DeleteCustomer(stub, args[1], args[2])
-	default:
-		return shim.Error("DeleteAgent error")
-	}
+    if args == nil || len(args) != 3 {
+        return shim.Error("DeleteAgent error")
+    }
+    switch args[0] {
+    case "Customer":
+        return t.DeleteCustomer(stub, args[1], args[2])
+    default:
+        return shim.Error("DeleteAgent error")
+    }
 }
 
 func (t *MC) TransactAgent(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	if args == nil || len(args) != 5 {
-		return shim.Error("TransactionAgent error")
-	}
-	switch args[0] {
-	case "Customer":
-		return t.TransactCustomer(stub, args[1], args[2], args[3], args[4])
-	default:
-		return shim.Error("TransactionAgent error")
-	}
+    if args == nil || len(args) != 5 {
+        return shim.Error("TransactionAgent error")
+    }
+    switch args[0] {
+    case "Customer":
+        return t.TransactCustomer(stub, args[1], args[2], args[3], args[4])
+    default:
+        return shim.Error("TransactionAgent error")
+    }
 }
 
 //查询
 func (t *MC) QueryCustomer(stub shim.ChaincodeStubInterface, ikey, ivalue string) peer.Response {
-	var result []string
-	kvs, err := t.FetchKVs(stub, "Customer", ikey, ivalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    var result []string
+    kvs, err := t.FetchKVs(stub, "Customer", ikey, ivalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	for _, kv := range kvs {
-		result = append(result, kv.Display())
-	}
-	return shim.Success([]byte("Queryed Customer:" + strings.Join(result, ",")))
+    for _, kv := range kvs {
+        result = append(result, kv.Display())
+    }
+    return shim.Success([]byte("Queryed Customer:" + strings.Join(result, ",")))
 }
 
 //添加
 func (t *MC) AddCustomer(stub shim.ChaincodeStubInterface, iid, iname, ideposit string) peer.Response {
-	id, err := strconv.Atoi(iid)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    id, err := strconv.Atoi(iid)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	name := iname
+    name := iname
 
-	deposit, err := strconv.ParseFloat(ideposit, 64)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	deposit = float64(deposit)
+    deposit, err := strconv.ParseFloat(ideposit, 64)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
+    deposit = float64(deposit)
 
-	customer := Customer{id, name, deposit}
+    customer := Customer{id, name, deposit}
 
-	key := "Customer:" + strconv.Itoa(customer.Id)
-	value, err := json.Marshal(customer)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    key := "Customer:" + strconv.Itoa(customer.Id)
+    value, err := json.Marshal(customer)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	err = stub.PutState(key, value)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    err = stub.PutState(key, value)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	return shim.Success([]byte("Added Customer:" + key + ":" + string(value)))
+    return shim.Success([]byte("Added Customer:" + key + ":" + string(value)))
 }
 
 //更新
 func (t *MC) UpdateCustomer(stub shim.ChaincodeStubInterface, ikey, ivalue, ukey, uvalue string) peer.Response {
-	var skvs []string
-	var fkvs []string
-	kvs, err := t.FetchKVs(stub, "Customer", ikey, ivalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    var skvs []string
+    var fkvs []string
+    kvs, err := t.FetchKVs(stub, "Customer", ikey, ivalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	for _, kv := range kvs {
-		var customer Customer
-		err = json.Unmarshal(kv.Value, &customer)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
+    for _, kv := range kvs {
+        var customer Customer
+        err = json.Unmarshal(kv.Value, &customer)
+        if err != nil {
+            return shim.Error(err.Error())
+        }
 
-		item := reflect.ValueOf(&customer).Elem()
-		for i := 0; i < item.NumField(); i++ {
-			if item.Type().Field(i).Name == ukey {
-				itype := item.Field(i).Type().Name()
-				switch itype {
-				case "int":
-					nvalue, err := strconv.Atoi(uvalue)
-					if err != nil {
-						return shim.Error(err.Error())
-					}
-					item.FieldByName(ukey).SetInt(int64(nvalue))
-				case "string":
-					nvalue := uvalue
-					item.FieldByName(ukey).SetString(nvalue)
-				case "float64":
-					nvalue, err := strconv.ParseFloat(uvalue, 64)
-					if err != nil {
-						return shim.Error(err.Error())
-					}
-					item.FieldByName(ukey).SetFloat(nvalue)
-				}
-				break
-			}
-		}
+        item := reflect.ValueOf(&customer).Elem()
+        for i := 0; i < item.NumField(); i++ {
+            if item.Type().Field(i).Name == ukey {
+                itype := item.Field(i).Type().Name()
+                switch itype {
+                case "int":
+                    nvalue, err := strconv.Atoi(uvalue)
+                    if err != nil {
+                        return shim.Error(err.Error())
+                    }
+                    item.FieldByName(ukey).SetInt(int64(nvalue))
+                case "string":
+                    nvalue := uvalue
+                    item.FieldByName(ukey).SetString(nvalue)
+                case "float64":
+                    nvalue, err := strconv.ParseFloat(uvalue, 64)
+                    if err != nil {
+                        return shim.Error(err.Error())
+                    }
+                    item.FieldByName(ukey).SetFloat(nvalue)
+                }
+                break
+            }
+        }
 
-		value, err := json.Marshal(customer)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
+        value, err := json.Marshal(customer)
+        if err != nil {
+            return shim.Error(err.Error())
+        }
 
-		err = stub.PutState(kv.Key, value)
-		if err != nil {
-			fkvs = append(fkvs, kv.Key+":"+string(value))
-		} else {
-			skvs = append(skvs, kv.Key+":"+string(value))
-		}
-	}
-	return shim.Success([]byte("Updated Customer Success:" + strings.Join(skvs, ",") + "\nUpdated Customer Fail:" + strings.Join(fkvs, ",")))
+        err = stub.PutState(kv.Key, value)
+        if err != nil {
+            fkvs = append(fkvs, kv.Key+":"+string(value))
+        } else {
+            skvs = append(skvs, kv.Key+":"+string(value))
+        }
+    }
+    return shim.Success([]byte("Updated Customer Success:" + strings.Join(skvs, ",") + "\nUpdated Customer Fail:" + strings.Join(fkvs, ",")))
 }
 
 //删除
 func (t *MC) DeleteCustomer(stub shim.ChaincodeStubInterface, ikey, ivalue string) peer.Response {
-	var skvs []string
-	var fkvs []string
-	kvs, err := t.FetchKVs(stub, "Customer", ikey, ivalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    var skvs []string
+    var fkvs []string
+    kvs, err := t.FetchKVs(stub, "Customer", ikey, ivalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	for _, kv := range kvs {
-		err := stub.DelState(kv.Key)
-		if err != nil {
-			fkvs = append(fkvs, kv.Display())
-		} else {
-			skvs = append(skvs, kv.Display())
-		}
-	}
-	return shim.Success([]byte("Deleted Customer Success:" + strings.Join(skvs, ",") + "\nDeleted Customer Fail:" + strings.Join(fkvs, ",")))
+    for _, kv := range kvs {
+        err := stub.DelState(kv.Key)
+        if err != nil {
+            fkvs = append(fkvs, kv.Display())
+        } else {
+            skvs = append(skvs, kv.Display())
+        }
+    }
+    return shim.Success([]byte("Deleted Customer Success:" + strings.Join(skvs, ",") + "\nDeleted Customer Fail:" + strings.Join(fkvs, ",")))
 }
 
 //实例间交易
 func (t *MC) TransactCustomer(stub shim.ChaincodeStubInterface, ivalue, jvalue, tkey, tvalue string) peer.Response {
-	var icustomer Customer
-	var jcustomer Customer
-	ikvs, err := t.FetchKVs(stub, "Customer", "Id", ivalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    var icustomer Customer
+    var jcustomer Customer
+    ikvs, err := t.FetchKVs(stub, "Customer", "Id", ivalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	for _, kv := range ikvs {
-		err = json.Unmarshal(kv.Value, &icustomer)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-	}
+    for _, kv := range ikvs {
+        err = json.Unmarshal(kv.Value, &icustomer)
+        if err != nil {
+            return shim.Error(err.Error())
+        }
+    }
 
-	jkvs, err := t.FetchKVs(stub, "Customer", "Id", jvalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    jkvs, err := t.FetchKVs(stub, "Customer", "Id", jvalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	for _, kv := range jkvs {
-		err = json.Unmarshal(kv.Value, &jcustomer)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-	}
+    for _, kv := range jkvs {
+        err = json.Unmarshal(kv.Value, &jcustomer)
+        if err != nil {
+            return shim.Error(err.Error())
+        }
+    }
 
-	//attrs := reflect.TypeOf(icustomer)
-	iitem := reflect.ValueOf(&icustomer).Elem()
-	jitem := reflect.ValueOf(&jcustomer).Elem()
-	for i := 0; i < iitem.NumField(); i++ {
-		if iitem.Type().Field(i).Name == tkey {
-			ttype := iitem.Field(i).Type().Name()
-			switch ttype {
-			case "int":
-				ntvalue, err := strconv.Atoi(tvalue)
-				if err != nil {
-					return shim.Error("TransactionCustomer error")
-				}
-				if int(iitem.FieldByName(tkey).Int()) < ntvalue {
-					return shim.Error("TransactionCustomer not sufficient funds")
-				}
-				nivalue := int(iitem.FieldByName(tkey).Int()) - ntvalue
-				njvalue := int(jitem.FieldByName(tkey).Int()) + ntvalue
-				iitem.FieldByName(tkey).SetInt(int64(nivalue))
-				jitem.FieldByName(tkey).SetInt(int64(njvalue))
-			case "string":
-				return shim.Error("TransactionCustomer error")
-			case "float64":
-				ntvalue, err := strconv.ParseFloat(tvalue, 64)
-				if err != nil {
-					return shim.Error("TransactionCustomer error")
-				}
-				if iitem.FieldByName(tkey).Float() < ntvalue {
-					return shim.Error("TransactionCustomer not sufficient funds")
-				}
-				nivalue := iitem.FieldByName(tkey).Float() - ntvalue
-				njvalue := jitem.FieldByName(tkey).Float() + ntvalue
-				iitem.FieldByName(tkey).SetFloat(nivalue)
-				jitem.FieldByName(tkey).SetFloat(njvalue)
-			}
-			break
-		}
-	}
+    //attrs := reflect.TypeOf(icustomer)
+    iitem := reflect.ValueOf(&icustomer).Elem()
+    jitem := reflect.ValueOf(&jcustomer).Elem()
+    for i := 0; i < iitem.NumField(); i++ {
+        if iitem.Type().Field(i).Name == tkey {
+            ttype := iitem.Field(i).Type().Name()
+            switch ttype {
+            case "int":
+                ntvalue, err := strconv.Atoi(tvalue)
+                if err != nil {
+                    return shim.Error("TransactionCustomer error")
+                }
+                if int(iitem.FieldByName(tkey).Int()) < ntvalue {
+                    return shim.Error("TransactionCustomer not sufficient funds")
+                }
+                nivalue := int(iitem.FieldByName(tkey).Int()) - ntvalue
+                njvalue := int(jitem.FieldByName(tkey).Int()) + ntvalue
+                iitem.FieldByName(tkey).SetInt(int64(nivalue))
+                jitem.FieldByName(tkey).SetInt(int64(njvalue))
+            case "string":
+                return shim.Error("TransactionCustomer error")
+            case "float64":
+                ntvalue, err := strconv.ParseFloat(tvalue, 64)
+                if err != nil {
+                    return shim.Error("TransactionCustomer error")
+                }
+                if iitem.FieldByName(tkey).Float() < ntvalue {
+                    return shim.Error("TransactionCustomer not sufficient funds")
+                }
+                nivalue := iitem.FieldByName(tkey).Float() - ntvalue
+                njvalue := jitem.FieldByName(tkey).Float() + ntvalue
+                iitem.FieldByName(tkey).SetFloat(nivalue)
+                jitem.FieldByName(tkey).SetFloat(njvalue)
+            }
+            break
+        }
+    }
 
-	bivalue, ierr := json.Marshal(icustomer)
-	bjvalue, jerr := json.Marshal(jcustomer)
-	if ierr != nil || jerr != nil {
-		return shim.Error(ierr.Error() + jerr.Error())
-	}
+    bivalue, ierr := json.Marshal(icustomer)
+    bjvalue, jerr := json.Marshal(jcustomer)
+    if ierr != nil || jerr != nil {
+        return shim.Error(ierr.Error() + jerr.Error())
+    }
 
-	err = stub.PutState(ikvs[len(ikvs)-1].Key, bivalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	err = stub.PutState(jkvs[len(jkvs)-1].Key, bjvalue)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    err = stub.PutState(ikvs[len(ikvs)-1].Key, bivalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
+    err = stub.PutState(jkvs[len(jkvs)-1].Key, bjvalue)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	return shim.Success([]byte("Transacted Customer Success"))
+    return shim.Success([]byte("Transacted Customer Success"))
 }
 
 //遍历
 func (t *MC) Traverse(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	var result []string
-	rtype := ""
-	if args != nil && len(args) > 0 && strings.TrimSpace(args[0]) != "" {
-		rtype = args[0]
-	}
-	kvs, err := t.FetchKVs(stub, rtype, "", "")
-	if err != nil {
-		return shim.Error(err.Error())
-	}
+    var result []string
+    rtype := ""
+    if args != nil && len(args) > 0 && strings.TrimSpace(args[0]) != "" {
+        rtype = args[0]
+    }
+    kvs, err := t.FetchKVs(stub, rtype, "", "")
+    if err != nil {
+        return shim.Error(err.Error())
+    }
 
-	for _, kv := range kvs {
-		result = append(result, kv.Display())
-	}
+    for _, kv := range kvs {
+        result = append(result, kv.Display())
+    }
 
-	return shim.Success([]byte("Traverse " + rtype + ":" + strings.Join(result, ",")))
+    return shim.Success([]byte("Traverse " + rtype + ":" + strings.Join(result, ",")))
 
 }
 
 //历史记录查询
 func (t *MC) HistQuery(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	var result []string
+    var result []string
 
-	kvs, err := t.FetchKVs(stub, args[0], args[1], args[2])
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	for _, kv := range kvs {
-		histIter, err := stub.GetHistoryForKey(kv.Key)
-		if err != nil {
-			return shim.Error(err.Error())
-			// return shim.Error(fmt.Sprintf("keys operation failed. Error accessing state: %s", err))
-		}
-		defer histIter.Close()
+    kvs, err := t.FetchKVs(stub, args[0], args[1], args[2])
+    if err != nil {
+        return shim.Error(err.Error())
+    }
+    for _, kv := range kvs {
+        histIter, err := stub.GetHistoryForKey(kv.Key)
+        if err != nil {
+            return shim.Error(err.Error())
+            // return shim.Error(fmt.Sprintf("keys operation failed. Error accessing state: %s", err))
+        }
+        defer histIter.Close()
 
-		for histIter.HasNext() {
-			resp, iterErr := histIter.Next()
-			if iterErr != nil {
-				return shim.Error(err.Error())
-				// return shim.Error(fmt.Sprintf("keys operation failed. Error accessing state: %s", err))
-			}
-			item, _ := json.Marshal(resp)
-			result = append(result, string(item))
-		}
-	}
+        for histIter.HasNext() {
+            resp, iterErr := histIter.Next()
+            if iterErr != nil {
+                return shim.Error(err.Error())
+                // return shim.Error(fmt.Sprintf("keys operation failed. Error accessing state: %s", err))
+            }
+            item, _ := json.Marshal(resp)
+            result = append(result, string(item))
+        }
+    }
 
-	return shim.Success([]byte("Traverse " + strings.Join(result, ",")))
+    return shim.Success([]byte("Traverse " + strings.Join(result, ",")))
 
 }
 
 func (t *MC) Test(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	tid := stub.GetTxID()
-	ttime, _ := stub.GetTxTimestamp()
-	cc,_ := stub.GetCreator()
-	bind, _ := stub.GetBinding()
-	res := string(tid) + ":" + string(ttime.String()) + ":" + string(cc) + ":" + string(bind)
-	return shim.Success([]byte("Echo: " + strings.Join(args, ",") + "=>" + res))
+    tid := stub.GetTxID()
+    ttime, _ := stub.GetTxTimestamp()
+    cc,_ := stub.GetCreator()
+    bind, _ := stub.GetBinding()
+    res := string(tid) + ":" + string(ttime.String()) + ":" + string(cc) + ":" + string(bind)
+    return shim.Success([]byte("Echo: " + strings.Join(args, ",") + "=>" + res))
 }
 
 func main() {
-	if err := shim.Start(new(MC)); err != nil {
-		fmt.Printf("Error starting MC chaincode: %s", err)
-	}
+    if err := shim.Start(new(MC)); err != nil {
+        fmt.Printf("Error starting MC chaincode: %s", err)
+    }
 }
 ```
 
@@ -1045,3 +1047,156 @@ Fabric v1.1.0还不支持chaincode的启动与停止指令, 可以通过移除ch
 > - VSCC：验证系统chaincode处理交易的验证，包括检查背书策略以及多版本并发控制
 
 替换或更改这些系统chaincode一定要万分小心，尤其是LSCC, ESCC 和 VSCC，因为它们处于主交易执行路径中。值得注意的是，VSCC在一个区块被提交到账本之前进行验证，故所有channel中的peer节点得出相同的验证结果以避免账本分叉（不确定因素）就很重要了。所以当VSCC被更改或替换时就要特别小心了。
+
+### docker脚本
+
+一个方便查看容器信息的脚本
+
+```bash
+#!/bin/bash
+#Description:   shell下格式化输出为表格样式
+#               使用时首先需要调用set_title对表格初始化
+#               追加表格数据可使用append_cell和append_line，append_cell不会自动换行，换行必须要使用append_line
+#               append_line参数是可选的，并且会自动对之前的append_cell换行
+#               使用output_table可输出表格
+#               暂不支持修改/插入/删除数据
+#               可使用. format_table.sh 或者source format_table.sh来引入改脚本的函数
+#               "(*)"会自动着色为红色字体
+# +----+------+---------------+
+# |ID  |Name  |Creation time  |
+# +----+------+---------------+
+# |1   |TF    |2017-01-01     |
+# |2   |      |2017-01-02(*)  |
+# |3   |SF    |               |
+# |3   |SF    |(*)            |
+# |4   |TS    |               |
+# |5   |      |               |
+# +----+------+---------------+
+
+
+sep="#"
+function append_cell(){
+    #对表格追加单元格
+    #append_cell col0 "col 1" ""
+    #append_cell col3
+    local i
+    for i in "$@"
+    do
+        line+="|$i${sep}"
+    done
+}
+function check_line(){
+if [ -n "$line" ] 
+then
+    c_c=$(echo $line|tr -cd "${sep}"|wc -c)
+    difference=$((${column_count}-${c_c}))
+    if [ $difference -gt 0 ]
+    then
+        line+=$(seq -s " " $difference|sed -r s/[0-9]\+/\|${sep}/g|sed -r  s/${sep}\ /${sep}/g)
+    fi
+    content+="${line}|\n"
+fi
+
+}
+function append_line(){
+    check_line
+    line=""
+    local i
+    for i in "$@"
+    do
+        line+="|$i${sep}"
+    done
+    check_line
+    line=""
+}
+function segmentation(){
+    local seg=""
+    local i
+    for i in $(seq $column_count)
+    do 
+        seg+="+${sep}"
+    done
+    seg+="${sep}+\n"
+    echo $seg
+}
+function set_title(){
+    #表格标头，以空格分割，包含空格的字符串用引号，如
+    #set_title Column_0 "Column 1" "" Column3
+    [ -n "$title" ] && echo "Warring:表头已经定义过,重写表头和内容"
+    column_count=0
+    title=""
+    local i
+    for i in "$@"
+    do
+        title+="|${i}${sep}"
+        let column_count++
+    done
+    title+="|\n"
+    seg=`segmentation`
+    title="${seg}${title}${seg}"
+    content=""
+}
+function output_table(){
+    if [ ! -n "${title}" ] 
+    then
+        echo "未设置表头，退出" && return 1
+    fi
+    append_line
+    table="${title}${content}$(segmentation)"
+    echo -e $table|column -s "${sep}" -t|awk '{if($0 ~ /^+/){gsub(" ","-",$0);print $0}else{gsub("\\(\\*\\)","\033[31m(*)\033[0m",$0);print $0}}'
+
+}
+
+if [ "$SHLVL" -eq "2" ]
+then
+    set_title "容器名" "主机名" "网络模式" "网络地址"
+    append_line 1 "TF" "2017-01-01"
+    append_cell 2 "" "2017-01-02(*)"
+    append_line 
+    append_cell 3 "SF"
+    append_line 
+    append_cell 3 "SF" "(*)"
+    append_line 4 "TS"
+    append_cell 5
+    output_table
+fi
+
+IFS=$'\n'
+containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}' $(docker ps -aq))
+
+set_title "容器名" "主机名" "镜像" "命令" "网络模式" "网络地址" "端口映射"
+for container in  $containers
+do
+    if [[ $# == 0 ]]
+    then
+        item=$(echo $container) 
+    else
+        item=$(echo $container | grep $1)
+    fi
+
+    if [[ $item != "" ]]
+    then
+        cname=$(echo $item | cut -d '✡' -f1)
+        cname=${cname//"/"/""}
+        hname=$(echo $item | cut -d '✡' -f2)
+        image=$(echo $item | cut -d '✡' -f3)
+        cmmnd=$(echo $item | cut -d '✡' -f4)
+        cmmnd=${cmmnd//"["/""}
+        cmmnd=${cmmnd//"]"/""}
+        nmode=$(echo $item | cut -d '✡' -f5)
+        ipadr=$(echo $item | cut -d '✡' -f6)
+        ports=$(echo $item | cut -d '✡' -f7)
+        ports=${ports//"0.0.0.0"/""}
+        ports=${ports//"map"/""}
+        ports=${ports//"["/""}
+        ports=${ports//"]"/""}
+        ports=${ports//"{"/""}
+        ports=${ports//"}"/""}
+        ports=${ports//": "/":"}
+        ports=${ports//" "/"|"}
+
+        append_line $cname $hname $image $cmmnd $nmode $ipadr $ports
+    fi
+done
+output_table
+```
