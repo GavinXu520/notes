@@ -1140,13 +1140,18 @@ full_mode="false"
 container_name="all"
 while getopts :n:si opt; do
     case $opt in
-        n) container_name=$OPTARG
-        ;;
-        s) simple_mode="true"
-        ;;
-        i) full_mode="true"
-        ;;
-        *) echo "Usage: dls [-s] [-i] [-n] [container]"
+        n)
+            container_name=$OPTARG
+            ;;
+        s)
+            simple_mode="true"
+            ;;
+        i)
+            full_mode="true"
+            ;;
+        *)
+            echo "Usage: dls [-s] [-i] [-n container]"
+            exit 1
     esac
 done
 
