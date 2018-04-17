@@ -1124,7 +1124,7 @@ function set_title(){
     content=""
 }
 function output_table(){
-    if [ ! -n "${title}" ] 
+    if [ ! -n "${title}" ]
     then
         echo "未设置表头，退出" && return 1
     fi
@@ -1134,19 +1134,6 @@ function output_table(){
 
 }
 
-if [ "$SHLVL" -eq "2" ]
-then
-    set_title "容器名" "主机名" "网络模式" "网络地址"
-    append_line 1 "TF" "2017-01-01"
-    append_cell 2 "" "2017-01-02(*)"
-    append_line 
-    append_cell 3 "SF"
-    append_line 
-    append_cell 3 "SF" "(*)"
-    append_line 4 "TS"
-    append_cell 5
-    output_table
-fi
 
 IFS=$'\n'
 containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}' $(docker ps -aq))
