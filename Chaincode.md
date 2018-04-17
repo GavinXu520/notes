@@ -295,6 +295,7 @@ set -ev
 
 # don't rewrite paths for Windows Git Bash users
 export MSYS_NO_PATHCONV=1
+export COMPOSE_PROJECT_NAME=$(basename $PWD)      #docker-compose命令使用此环境变量或者--project-name或-p参数指定项目名称, 项目名称和docker-compose.yml中指定的networks组合生成docker网络名
 
 docker-compose -f docker-compose.yml down         #确保上次产生的Docker容器被关闭
 
@@ -337,6 +338,8 @@ docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/etc/h
 #
 # Exit on first error, print all commands.
 set -ev
+export COMPOSE_PROJECT_NAME=$(basename $PWD)
+
 
 # Shut down the Docker containers that might be currently running.
 docker-compose -f docker-compose.yml stop
