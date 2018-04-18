@@ -1055,11 +1055,13 @@ Fabric v1.1.0还不支持chaincode的启动与停止指令, 可以通过移除ch
 ```bash
 #!/bin/bash
 # Usage:
-# dls             => 默认显示
-# dls -i          => 完整显示(无表格格式)
-# dls -s          => 精简显示
-# dls -k          => 删除容器
-# dls -n cli      => 仅对容器名包含指定关键字的容器执行操作
+# dls                                                   => 默认显示
+# dls -o --format "table {{.ID}}\t{{.Command}}"         => 原始docker ps
+# dls -i                                                => 完整显示(无表格格式)
+# dls -f name=cli                                       => 按key过滤
+# dls -s                                                => 精简显示
+# dls -k                                                => 删除容器
+# dls -n cli                                            => 仅对容器名包含指定关键字的容器执行操作
 
 sep="#"
 IFS=$'\n'
@@ -1136,14 +1138,28 @@ function output_table(){
 
 }
 
+args=""
 stop_container="false"
 simple_mode="false"
 full_mode="false"
 container_name="all"
-while getopts :n:sik opt; do
+filter=""
+
+if [[ $* =~ "-o" ]]                           # 使用docker ps命令的原始语法, 忽略所有dls的自定义参数语法
+then
+    args=$*
+    args=${args//"-o"/""}
+    docker ps $args
+    exit 0
+fi
+
+while getopts :n:f:sik opt; do
     case $opt in
         n)
             container_name=$OPTARG
+            ;;
+        f)
+            filter="-f "$OPTARG
             ;;
         s)
             simple_mode="true"
@@ -1155,7 +1171,7 @@ while getopts :n:sik opt; do
             stop_container="true"
             ;;
         *)
-            echo "Usage: dls [-s] [-i] [-k] [-n container]"
+            echo "Usage: dls [-o <args>] [-s] [-f <k=v>] [-i] [-k] [-n <container>]"
             exit 1
     esac
 done
@@ -1164,10 +1180,11 @@ if [[ $stop_container == "true" ]]
 then
     if [[ $container_name == "all" ]]
     then
-        docker rm -f $(docker ps -aq)
+        docker rm -f $(docker ps -aq $filter)
         exit 0
     else
-        docker rm -f $(docker ps -aqf name=$container_name)
+        # docker rm -f $(docker ps -aqf name=$container_name $filter)
+        docker rm -f $(docker ps -a $filter | grep $container_name | awk '{print $1}')
         exit 0
     fi
 fi
@@ -1177,15 +1194,21 @@ then
     echo "# Container: ""$container_name"
     if [[ $container_name == "all" ]]
     then
-        docker inspect $(docker ps -aq)
+        docker inspect $(docker ps -aq $filter)
         exit 0
     else
-        docker inspect $(docker ps -aqf name=$container_name)
+        # docker inspect $(docker ps -aqf name=$container_name $filter)
+        docker inspect $(docker ps -a $filter | grep $container_name | awk '{print $1}')
         exit 0
     fi
 fi
 
-containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}-✡{{.State.Status}}' $(docker ps -aq))
+if [[ $container_name = "all" ]]
+then
+    containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}-✡{{.State.Status}}' $(docker ps -aq $filter))
+else
+    containers=$(docker inspect -f '{{.Name}}✡{{.Config.Hostname}}✡{{.Config.Image}}✡{{.Path}} {{.Args}}✡{{.HostConfig.NetworkMode}}✡{{range .NetworkSettings.Networks}}{{.IPAddress}}/{{.IPPrefixLen}}{{end}}✡{{.NetworkSettings.Ports}}-✡{{.State.Status}}' $(docker ps -a $filter | grep $container_name | awk '{print $1}'))
+fi
 
 if [[ $simple_mode == "true" ]]
 then
@@ -1196,13 +1219,7 @@ fi
 
 for container in  $containers
 do
-    if [[ $container_name = "all" ]]
-    then
-        item=$(echo $container) 
-    else
-        item=$(echo $container | grep $container_name)
-    fi
-
+    item=$(echo $container) 
     if [[ $item != "" ]]
     then
         cname=$(echo $item | cut -d '✡' -f1)
@@ -1222,7 +1239,7 @@ do
         ports=${ports//"{"/""}
         ports=${ports//"}"/""}
         ports=${ports//": "/":"}
-        ports=${ports//" "/"|"}
+        ports=${ports//" "/","}
         if [[ $ports != "-" ]]
         then
             ports=${ports//"-"/""}
