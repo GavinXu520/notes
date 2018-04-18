@@ -387,6 +387,7 @@ fabric-ca-client register --id.name adm --id.type user --id.secret admpw --id.af
 > 说明：
 > - 此命令注册了一个名为adm, 类型为user, 组织关系为org1.department1, 属性为"hf.Revoker=true,foo=bar"的身份
 > - 此命令执行过程中, 对于命令行参数未指定的参数项, 会默认使用fabric-ca-client-config.yaml配置文件的配置值
+> - 此命令省略了-u选项(用于指定ca server的url), 如果fabric-ca-client-config.yaml文件中也未能读取到该值, 则使用默认值http://localhost:7054
 > - 此命令执行完成会返回该身份的密码, 如果不指定--id.secret, ca-server会生成一个随即密码, 使用该身份的身份名(enrollment ID)和密码(secret)可以在其他节点登记(enroll)该身份
 > - 此命令执行完成会在ca-server的fabric-ca-server.db数据库的users表中新增一条记录
 > - 注册过程中, ca-server会做相关检查, 只有所有检查均通过, 身份注册才能成功. 检查内容如下：
